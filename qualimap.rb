@@ -1,4 +1,3 @@
-
 require 'formula'
 
 class Qualimap < Formula
@@ -6,66 +5,55 @@ class Qualimap < Formula
   homepage 'http://qualimap.bioinfo.cipf.es/'
   url 'http://qualimap.bioinfo.cipf.es/release/qualimap_v0.7.1.zip'
   sha1 '65be770802797998fa1a96fb3c12558b8b741052'
-  def install
-    chmod 0755, 'qualimap'
-    prefix.install Dir['*']
-    mkdir_p bin
-    mkdir_p lib
-    bin.install(prefix/'qualimap')
-    cp prefix/'qualimap.jar', lib/'qualimap.jar'
-  end
+
+  depends_on 'r' => :optional
 
   def patches
     # fixes path setup for java libs and qualimap bin
     DATA
   end
 
+  def install
+    chmod 0755, 'qualimap'
+    prefix.install Dir['*']
+    mkdir_p bin
+    mkdir_p lib
+    bin.install prefix/'qualimap'
+    lib.install prefix/'qualimap.jar'
+  end
+
   def test
-    system "qualimap", "-h"
+    system 'qualimap', '-h'
   end
 end
 __END__
 --- a/qualimap	2013-04-19 14:07:42.000000000 -0500
-+++ b/qualimap	2013-09-12 11:00:20.813917000 -0500
-@@ -49,35 +49,17 @@
++++ b/qualimap	2013-10-13 20:38:01.138915373 -0400
+@@ -51,6 +51,7 @@
  
- prg=$0
+ # check if symbolic link
  
--# check if symbolic link
--
--while [ -h "$prg" ] ; do
--    ls=`ls -ld "$prg"`
--    link=`expr "$ls" : '.*-> \(.*\)$'`
--    if expr "$link" : '.*/.*' > /dev/null; then
--        prg="$link"
--    else
--        prg="`dirname $prg`/$link"
--    fi
--done
--
--
++if false; then
+ while [ -h "$prg" ] ; do
+     ls=`ls -ld "$prg"`
+     link=`expr "$ls" : '.*-> \(.*\)$'`
+@@ -61,6 +62,7 @@
+     fi
+ done
+ 
++fi
+ 
  shell_path=`dirname "$prg"`;
--absolute=`echo $shell_path | grep "^/"`;
+ absolute=`echo $shell_path | grep "^/"`;
+@@ -76,8 +78,10 @@
  
--if [ -z $absolute ]
--then
--	export QUALIMAP_HOME="`pwd`/$shell_path"
--else 
--	export QUALIMAP_HOME="$shell_path"
--fi
-+## disabled some of the clever path detection because it 
-+## was too clever by half, and didn't work with brew
- 
--# For debug purposes
-+export QUALIMAP_HOME="$shell_path"
- 
--#echo $QUALIMAP_HOME
--#echo "ARGS are ${ARGS[@]}"
+ #echo $QUALIMAP_HOME
+ #echo "ARGS are ${ARGS[@]}"
 +export BREWDIR=$(echo $QUALIMAP_HOME | sed -e 's/bin$//g')
-+export CLASSPATH="$BREWDIR/bin/qualimap.jar:$BREWDIR/lib/*:$BREWDIR/Cellar/qualimap/*/lib/*"
++export QUALIMAP_LIBDIR=$(dirname $(readlink -f $BREWDIR/lib/qualimap.jar))
  
 -java $java_options -classpath $QUALIMAP_HOME/qualimap.jar:$QUALIMAP_HOME/lib/* org.bioinfo.ngs.qc.qualimap.main.NgsSmartMain "${ARGS[@]}"
-+java $java_options -classpath $CLASSPATH org.bioinfo.ngs.qc.qualimap.main.NgsSmartMain "${ARGS[@]}"
++java $java_options -classpath $QUALIMAP_LIBDIR/qualimap.jar:$QUALIMAP_LIBDIR/* org.bioinfo.ngs.qc.qualimap.main.NgsSmartMain "${ARGS[@]}"
  
  if [ -n "$OUTPUT_ADDITIONAL_HELP" ]; then 
      echo "Special arguments: "
